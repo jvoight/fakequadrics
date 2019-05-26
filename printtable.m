@@ -17,12 +17,14 @@
 */
 
 load "Output/Degree6Data.m";
+SetLogFile("Output/Degree6Table.tex");
 
 n := dat[1][1];
 d := 0;
 DD := 0;
 NN := 0;
-pi2 := Pi(RealField())^2;
+// pi2 := Pi(RealField())^2;
+pi2 := 1;
 vol := 0;
 
 // printf "\\begin{tabular}{ccc|c|cccc}\n";
@@ -93,5 +95,5 @@ end for;
 
 printf "\\end{tabular}";
 
-
+quit;
 
