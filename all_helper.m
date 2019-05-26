@@ -1,16 +1,3 @@
-ProbableRational := function(r : Epsilon := 10^(-15));  // return best rational approximation
-  if Abs(r) lt Epsilon then
-    return 0;
-  else
-    fr := PowerRelation(r,1 : Al := "LLL");
-    if fr cmpeq 1 then
-      return false;
-    else
-      return Roots(fr,Rationals())[1][1];
-    end if;
-  end if;
-end function;
-
 InvolutionRankNu := function(k, s, DD, NN : Positive := false);
   // computes nu as a function of the squarefree level NN at the split real places s
 
@@ -38,11 +25,11 @@ InvolutionRankNu := function(k, s, DD, NN : Positive := false);
   return Rank(Matrix(Mpgens));
 end function;
   
-MaximalVolumes := function(k, s, DD, NN : verbose := false);
+MaximalVolumes := function(k, s, DD, NN, Zeta_arith : verbose := false);
   // computes the volume of the maximal quaternionic arithmetic group
   // over k with discriminant DD and squarefreelevel NN at the split real places s
   // returns maximal holomorphic volume, maximal stable volume, and the index of the 
-  // former in the latter
+  // former in the latter; answers are arithmetic (so should be multiplied by pi^2)
   
   RR := RealField();
   pi := Pi(RR);
@@ -52,22 +39,24 @@ MaximalVolumes := function(k, s, DD, NN : verbose := false);
 
   dk := Discriminant(R);
   zeta2 := Evaluate(LSeries(k),2);
-  volX1 := 2*(4*pi)^#s/(4*pi^2)^r*dk^(3/2)*zeta2;
-  if verbose then print "vol(X^1_0) =", RealField(6)!volX1; end if;
+  assert #s eq 2;
+//   volX1 := 2*(4*pi)^#s/(4*pi^2)^r*dk^(3/2)*zeta2;
+  volX1_arith := 2*4^2*Zeta_arith/2^r;
+  if verbose then print "vol(X^1_0) = (", volX1_arith, ")*pi^2"; end if;
 
   if Norm(DD) gt 1 then
-    volX1 *:= Norm(DD)*&*[1-1/Norm(ppf[1]) : ppf in Factorization(DD)];
+    volX1_arith *:= Norm(DD)*&*[1-1/Norm(ppf[1]) : ppf in Factorization(DD)];
   end if;
   if Norm(NN) gt 1 then
-    volX1 *:= Norm(NN)*&*[1+1/Norm(ppf[1]) : ppf in Factorization(NN)];
+    volX1_arith *:= Norm(NN)*&*[1+1/Norm(ppf[1]) : ppf in Factorization(NN)];
   end if;
-  if verbose then print "vol(X^1) =", RealField(6)!volX1; end if;
+  if verbose then print "vol(X^1) =", volX1_arith, "*pi^2"; end if;
 
   U, mU := UnitGroup(R);
   h := function(x); if x eq 1 then return GF(2)!0; else return GF(2)!1; end if; end function;
   krank := Rank(Kernel(Matrix([[h(ux) : ux in RealSigns(mU(U.i))] : i in [1..Degree(k)]])));
-  volXplus := volX1/2^krank;
-  if verbose then print "vol(X^+) =", RealField(6)!volXplus, ", pos unit size = ", 2^krank; end if;
+  volXplus_arith := volX1_arith/2^krank;
+  if verbose then print "vol(X^+) = (", volXplus_arith, ")*pi^2, pos unit size = ", 2^krank; end if;
 
   if #s eq 2 then
     ks := 2;
@@ -75,9 +64,9 @@ MaximalVolumes := function(k, s, DD, NN : verbose := false);
     ks := Rank(Kernel(Matrix([[h(ux) : ux in [RealSigns(mU(U.i))[cs] : 
                           cs in [1..Degree(k)] | cs notin s]] : i in [1..Degree(k)]])));
   end if;
-  voltXplus := volX1/2^ks;
+  voltXplus_arith := volX1_arith/2^ks;
   if verbose then 
-    print "vol(tX^+) =", RealField(6)!voltXplus, ", unit size = ", 2^ks; 
+    print "vol(tX^+) = (", voltXplus_arith, ")*pi^2, unit size = ", 2^ks; 
   end if;
    
   Clplus, mClplus := NarrowClassGroup(k);
@@ -89,9 +78,9 @@ MaximalVolumes := function(k, s, DD, NN : verbose := false);
   else
     w := 0;
   end if;
-  volXw := volXplus/2^w;
+  volXw_arith := volXplus_arith/2^w;
   if verbose then 
-    print "vol(X^w) =", RealField(6)!volXw, ", Atkin-Lehner size = ", 2^w; 
+    print "vol(X^w) = (", volXw_arith, ")*pi^2, Atkin-Lehner size = ", 2^w; 
   end if;
 
   ClB, mClB := RayClassGroup(1*Integers(k), [j : j in [1..Degree(k)] | j notin s]);
@@ -104,29 +93,29 @@ MaximalVolumes := function(k, s, DD, NN : verbose := false);
   else
     tw := 0;
   end if;
-  voltXw := voltXplus/2^tw;
+  voltXw_arith := voltXplus_arith/2^tw;
   if verbose then 
-    print "vol(tX^w) =", RealField(6)!voltXw, ", unoriented Atkin-Lehner size = ", 2^tw; 
+    print "vol(tX^w) = (", voltXw_arith, ")*pi^2, unoriented Atkin-Lehner size = ", 2^tw; 
   end if;
   
   Cl, mCl := ClassGroup(k);
   Cl2 := Kernel(hom<Cl -> Cl | [2*x : x in Generators(Cl)]>);
   Cl2lowp := [x : x in Cl2 | Order((mCl(x))@@mClplus) le 2];
-  volXstar := volXw/#Cl2lowp;
+  volXstar_arith := volXw_arith/#Cl2lowp;
   if verbose then 
-    print "vol(X^*) =", RealField(6)!volXstar, ", type normalizer size = ", #Cl2lowp; 
+    print "vol(X^*) = (", volXstar_arith, ")*pi^2, type normalizer size = ", #Cl2lowp; 
   end if;
 
   ClB2 := Kernel(hom<ClB -> ClB | [2*x : x in Generators(ClB)]>);
   ClB2lowp := ClB2;
-  voltXstar := voltXw/#ClB2lowp;
+  voltXstar_arith := voltXw_arith/#ClB2lowp;
 
   if verbose then 
-    print "vol(tX^*) =", RealField(6)!voltXstar, ", unoriented type normalizer size = ", 
+    print "vol(tX^*) = (", voltXstar_arith, ")*pi^2, unoriented type normalizer size = ", 
           #ClB2lowp; 
   end if;
 
-  return volXstar, voltXstar, Round(volXstar/voltXstar);
+  return volXstar_arith, voltXstar_arith, volXstar_arith/voltXstar_arith;
 end function;
 
 function IsIsomorphicOverQQ(B, Bp);
@@ -166,19 +155,23 @@ function MaybeHasUnstableSupergroup2(DD, Soo, NN);
   Zk := Integers(k);
   assert NumberField(Order(NN)) eq k;
 
-  setequal := function(roo, roop)
-    Sort(~roo);
-    Sort(~roop);
-    if #roo ne #roop then return false; end if;
-    for i := 1 to #roo do
-      if Abs(roo[i]-roop[i]) gt 10^-20 then return false; end if;
-    end for;
-    return true;
+  applyiota := function(iota, v0);
+    // takes an automorphism of k and an infinite place v
+    // and returns the place v circ iota
+    v0iotak1 := Evaluate(iota(k.1),v0);
+    koo := RealPlaces(k);
+    alphas := [Evaluate(k.1,koo[i]) : i in [1..#koo]];
+    epsalpha := Min([Abs(alphas[i]-alphas[j]) : i,j in [1..#koo] | i ne j]);    
+    eps, minv := Min([Abs(v0iotak1-Evaluate(k.1,koo[i])) : i in [1..#koo]]);
+    assert eps lt epsalpha/10;  
+      // extra factor 10 for safety, we just need to know that there is only one
+      // root in the neighborhood
+    return koo[minv];
   end function;
 
   Autk := [hom<k -> k | r[1]> : r in Roots(MinimalPolynomial(k.1),k)];
   return #[iota : iota in Autk |
-            setequal([Evaluate(k.1,v) : v in Soo], [Evaluate(iota(k.1),v) : v in Soo]) and
+            SequenceToSet(Soo) eq {applyiota(iota,v) : v in Soo} and
             ideal<Zk | [iota(x) : x in Generators(DD)]> eq DD and
             ideal<Zk | [iota(x) : x in Generators(NN)]> eq NN] gt 1;
 end function;
@@ -393,19 +386,23 @@ TwoRank := function(k);
   return Valuation(posunitsize,2);
 end function;
 
-MaxProductOfNormPrimeMinusOneOverTwo := function(Vbound, k, Zeta);  
+MaxProductOfNormPrimeMinusOneOverTwo := function(Vbound_arith, k, Zeta_arith);  
   // return the maximum of the discriminant term in the volume formula for a 
   // minimal covolume group over k with covolume less than Vbound
-  return Vbound*(4*Pi(RealField())^2)^Degree(k)*(2^TwoRank(k)*
-                ClassNumber(k))*2^#PrimesUpTo(2,k)/(8*Pi(RealField())^2*
-                Abs(Discriminant(Integers(k)))^(3/2)*Zeta);
+//  return Vbound*(4*Pi(RealField())^2)^Degree(k)*(2^TwoRank(k)*
+//                ClassNumber(k))*2^#PrimesUpTo(2,k)/(8*Pi(RealField())^2*
+//                Abs(Discriminant(Integers(k)))^(3/2)*Zeta);
+  return Vbound_arith*2^Degree(k)*(2^TwoRank(k)*ClassNumber(k))*2^#PrimesUpTo(2,k)
+                  /(8*Zeta_arith);
 end function;
 
-LevelProductUpperBound := function(Vbound, k, typenumber, Zeta);  
+LevelProductUpperBound := function(Vbound_arith, k, typenumber, Zeta_arith);  
   // return the maximum of the level term in the volume formula for a maximal 
   // arithmetic group Gamma_{S,O} over k with covolume less than Vbound
-  X := 2^#PrimesUpTo(2,k)*Vbound*(4*Pi(RealField())^2)^Degree(k)*typenumber/
-           (8*Pi(RealField())^2*Abs(Discriminant(Integers(k)))^(3/2)*Zeta);
+//  X := 2^#PrimesUpTo(2,k)*Vbound*(4*Pi(RealField())^2)^Degree(k)*typenumber/
+//           (8*Pi(RealField())^2*Abs(Discriminant(Integers(k)))^(3/2)*Zeta);
+  X_arith := 2^#PrimesUpTo(2,k)*Vbound_arith*2^Degree(k)*typenumber/
+           (8*Zeta_arith);
       // Since nu <= |S|, this comes from equation (4.1)
   
   NuUpperBound := 0;
@@ -413,7 +410,7 @@ LevelProductUpperBound := function(Vbound, k, typenumber, Zeta);
   normbnd := 100;  // just a place to start
   pps := PrimesUpTo(normbnd, k);
   i := 1;
-  while nuprod le Ceiling(X) do
+  while nuprod le Ceiling(X_arith) do
     NuUpperBound +:= 1;
     nuprod *:= (Norm(pps[i])+1)/2;
     if i eq #pps then // ran out of primes, unlikely to happen!
@@ -424,25 +421,25 @@ LevelProductUpperBound := function(Vbound, k, typenumber, Zeta);
     i +:= 1;
   end while;
   
-  return (2^NuUpperBound)*X;
+  return (2^NuUpperBound)*X_arith;
 end function;
 
-MaxNormOfRamPrimesFromVolume := function(Vbound, k, Zeta);  
+MaxNormOfRamPrimesFromVolume := function(Vbound_arith, k, Zeta_arith);  
   // return the maximum norm of a prime which ramifies in a fake quadric quaternion 
   // algebra over k in which the minimal covolume is less than Vbound
-  return Integers()!Ceiling(2*MaxProductOfNormPrimeMinusOneOverTwo(Vbound,k,Zeta)+1);
+  return Integers()!Ceiling(2*MaxProductOfNormPrimeMinusOneOverTwo(Vbound_arith,k,Zeta_arith)+1);
 end function;
 
-MaxNumberOfRamPrimesFromVolume := function(Vbound, k, Zeta);  
+MaxNumberOfRamPrimesFromVolume := function(Vbound_arith, k, Zeta_arith);  
   // return the maximum number of ramified primes in a fake quadric quaternion 
   // algebra over k in which the minimal covolume is less than Vbound
   n:=Degree(k);
-  PrimesWhichCouldRamify := PrimesUpTo(MaxNormOfRamPrimesFromVolume(Vbound,k,Zeta), k);
+  PrimesWhichCouldRamify := PrimesUpTo(MaxNormOfRamPrimesFromVolume(Vbound_arith,k,Zeta_arith), k);
   MaxTerms := 0;
   prod := 1;
   for pp in PrimesWhichCouldRamify do
     prod:=prod*(Norm(pp)-1)/2;
-    if prod le MaxProductOfNormPrimeMinusOneOverTwo(Vbound,k,Zeta) then
+    if prod le MaxProductOfNormPrimeMinusOneOverTwo(Vbound_arith,k,Zeta_arith) then
       MaxTerms:=MaxTerms+1;
     end if;
   end for;
@@ -454,22 +451,22 @@ MaxNumberOfRamPrimesFromVolume := function(Vbound, k, Zeta);
   return MaxTerms;
 end function;
 
-MaxNumberOfRamPrimesFromVolumeWithNormAtLeast4 := function(Vbound, k, Zeta);  
+MaxNumberOfRamPrimesFromVolumeWithNormAtLeast4 := function(Vbound_arith, k, Zeta_arith);  
   // return the maximum number of ramified primes in a fake quadric quaternion 
   // algebra over k in which the minimal covolume is less than Vbound and norm >= 4
-  PrimesWhichCouldRamify := PrimesUpTo(MaxNormOfRamPrimesFromVolume(Vbound,k,Zeta), k);
+  PrimesWhichCouldRamify := PrimesUpTo(MaxNormOfRamPrimesFromVolume(Vbound_arith,k,Zeta_arith), k);
   MaxTerms4:=0;
   prod:=1;
   for pp in PrimesWhichCouldRamify do
     if Norm(pp) ge 4 then
       prod:=prod*(Norm(pp)-1)/2;
-      if prod le MaxProductOfNormPrimeMinusOneOverTwo(Vbound,k,Zeta)*2^#PrimesUpTo(2,k) then
+      if prod le MaxProductOfNormPrimeMinusOneOverTwo(Vbound_arith,k,Zeta_arith)*2^#PrimesUpTo(2,k) then
         MaxTerms4:=MaxTerms4+1;
       end if;
     end if;
   end for;
   
-  return Minimum(MaxTerms4,MaxNumberOfRamPrimesFromVolume(Vbound,k,Zeta));
+  return Minimum(MaxTerms4,MaxNumberOfRamPrimesFromVolume(Vbound_arith,k,Zeta_arith));
 end function;
 
 SetsOfRamifiedPrimes := function(k, X, MaxTerms, MaxTerms4);
@@ -562,6 +559,10 @@ ProdNormMinusOneOverTwo := function(DB);
 end function;
 
 TypeNumber := function(k,i,j,DB);
+  // Given a totally real number field k, this function returns the type number of the quaternion algebra over k 
+  // which is split at real places i and j (in Magma's numbering convention) of k, ramified at all other
+  // real places of k, and is ramified at the prime divisors of the ideal DB. That is, the number of conjugacy 
+  // classes of maximal orders in the quaternion algebra.
   Zk := Integers(k);
   n := Degree(k);
   G, m := RayClassGroup(1*Zk, [1..i-1] cat [i+1..j-1] cat [j+1..n]);

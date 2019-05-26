@@ -1,7 +1,10 @@
+// This code enumerates maximal arithmetic subgroups of PGL_2(R) x PGL_2(R) which 
+// may contain the stable subgroup of the fundamental group of an irreducible fake quadric.
+// This search is described on pages 19-21 of the paper Commensurability Classes of Fake Quadrics 
+// by Linowitz, Stover and Voight.
+
 load "all_helper.m";
 
-eps:= 10^-7;  
-// volumes are computed numerically, but all volumes considered are < 1/eps 
 RR := RealField();
 pi := Pi(RR);
 done := 1;  // index keeping track of total number of fields done so far
@@ -34,24 +37,30 @@ for fieldpoly in Reverse(T) do
   koo := InfinitePlaces(k);
   Zk := Integers(k);
   Dk := Abs(Discriminant(Zk));
-  Zeta := Evaluate(LSeries(k),2);  // evaluated rigorously to prec(RR) = 30 
   h := ClassNumber(k);
   primesabove2 := #PrimesUpTo(2,k);
-  
 
+  // See Proposition 5.4 of
+  // Kirschmer--Voight, "Algorithmic enumeration of ideal classes for quaternion orders",
+  // SIAM J. Comput. (SICOMP) 39 (2010), no. 5, 1714-1747. 
+  Zpi := Dk^(3/2)*Evaluate(LSeries(k),2)/(2*pi^2)^n;
+      // evaluated rigorously to default precision prec(RR) = 30 
+  m := Lcm(CyclotomicQuadraticExtensions(k));  
+  assert Abs(Round(m*Zpi)-m*Zpi) lt 10^-7;  // enough to check lt 1/2
+  Zeta_arith := Round(m*Zpi)/m;
   
   hasautk := HasNontrivialAutomorphism(k);
   if hasautk then
-    Vbound := 32*pi^2;
+    Vbound_arith := 32;  // Remove factors pi
   else
     // See Theorem 2.3 and bound implied by (4.15)
-    Vbound := 16*pi^2;  
+    Vbound_arith := 16;  
   end if;
   if verbose ge 1 then
     if hasautk then
-      print "k has a nontrivial automorphism group, so taking Vbound = 32 * pi^2";
+      print "k has a nontrivial automorphism group, so taking Vbound = 32*pi^2";
     else
-      print "k has no nontrivial automorphisms, so taking Vbound = 16 * pi^2";
+      print "k has no nontrivial automorphisms, so taking Vbound = 16*pi^2";
     end if;
   end if;
     
@@ -59,16 +68,16 @@ for fieldpoly in Reverse(T) do
   // compute the primes in Ram(B) for the quaternion algebras B to be checked
   // First bound #Ram(B) (MaxTerms and MaxTerms4), then
   // compute the levels of the Eichler orders to be checked
-  PrimesWhichCouldRamify := PrimesUpTo(MaxNormOfRamPrimesFromVolume(Vbound, k, Zeta), k);
-  MaxTerms := MaxNumberOfRamPrimesFromVolume(Vbound, k, Zeta);
-  MaxTerms4 := MaxNumberOfRamPrimesFromVolumeWithNormAtLeast4(Vbound, k, Zeta);
+  PrimesWhichCouldRamify := PrimesUpTo(MaxNormOfRamPrimesFromVolume(Vbound_arith, k, Zeta_arith), k);
+  MaxTerms := MaxNumberOfRamPrimesFromVolume(Vbound_arith, k, Zeta_arith);
+  MaxTerms4 := MaxNumberOfRamPrimesFromVolumeWithNormAtLeast4(Vbound_arith, k, Zeta_arith);
     // two bounds apply, need to know primes with small norm in particular
 
   if MaxTerms eq 0 then
     Ram := [1*Integers(k)];  // must be unramified at all primes!
     PossibleDiscs := [1*Integers(k)];
   else // MaxTerms ge 1 then
-    maxprodnmm1 := MaxProductOfNormPrimeMinusOneOverTwo(Vbound, k, Zeta);
+    maxprodnmm1 := MaxProductOfNormPrimeMinusOneOverTwo(Vbound_arith, k, Zeta_arith);
     Ram := SetsOfRamifiedPrimes(k, maxprodnmm1, MaxTerms, MaxTerms4);
     PossibleDiscs := RamToDiscList(k,Ram, maxprodnmm1, n);
   end if;   
@@ -100,17 +109,18 @@ for fieldpoly in Reverse(T) do
         // Volume bound comes from (4.14); the type number is [K(B):k] and
         // 0 <= nu < #S so we can ignore the term 2^(-nu)*prod_{pp in S}(Nm(pp)+1)
         // Zeta is guaranteed to the default 30 digits, which is much larger than 1/eps
-        PartialMinVol := 8*pi^2*Dk^(3/2)*Zeta*ProdNormMinusOneOverTwo(DB)
-                              /((4*pi^2)^n*TypeNumber(k,i,j,DB));
+//        PartialMinVol := 8*pi^2*Dk^(3/2)*Zeta*ProdNormMinusOneOverTwo(DB)
+//                              /((4*pi^2)^n*TypeNumber(k,i,j,DB));
+        PartialMinVol_arith := 8*Zeta_arith*ProdNormMinusOneOverTwo(DB)/(2^n*TypeNumber(k,i,j,DB));
 
         if verbose ge 1 then
-          print "PartialMinVol computed: ", PartialMinVol;
+          print "PartialMinVol_arith computed: ", PartialMinVol_arith, "*pi^2";
         end if;
 
-        if PartialMinVol gt Vbound + eps then
+        if PartialMinVol_arith gt Vbound_arith then
           if verbose ge 1 then
-            print "Volumes will be too big. Volume is: ", PartialMinVol;
-            print "Volume bound: ", Vbound;
+            print "Volumes will be too big. Volume is: ", PartialMinVol_arith, "*pi^2";
+            print "Volume bound: ", Vbound_arith, "*pi^2";
           end if;
           continue;
         end if;
@@ -118,7 +128,7 @@ for fieldpoly in Reverse(T) do
         if verbose ge 1 then
           print "Computing sets of levels... ";
         end if;
-        SetOfS := SetsOfLevels(k, LevelProductUpperBound(Vbound, k, TypeNumber(k,i,j,DB), Zeta));
+        SetOfS := SetsOfLevels(k, LevelProductUpperBound(Vbound_arith, k, TypeNumber(k,i,j,DB), Zeta_arith));
 
         for sset in SetOfS do
           ssetprodover2, ssetprod, sprodideal := LevelProducts(Zk, sset);
@@ -139,18 +149,18 @@ for fieldpoly in Reverse(T) do
           end if;
             
           // Given S, we can refine whether or not there is an unstable supergroup
-          VboundS := Vbound;  
+          VboundS_arith := Vbound_arith;  
           if hasautk then
-            if Norm(sprodideal) gt 1 and not MaybeHasUnstableSupergroup2(DB, koo[1..i-1] cat koo[i+1..j-1] 
+            if not MaybeHasUnstableSupergroup2(DB, koo[1..i-1] cat koo[i+1..j-1] 
                                                  cat koo[j+1..n], sprodideal) then
-              VboundS := 16*pi^2;  // as above 
+              VboundS_arith := 16;  // as above 
             end if;
           end if;
             
-          if PartialMinVol*ssetprodover2 gt VboundS + eps then
+          if PartialMinVol_arith*ssetprodover2 gt VboundS_arith then
             if verbose ge 1 then
-              print "Volumes will be too big. Volume is: ", PartialMinVol*ssetprodover2;
-              print "Volume bound: ", VboundS;
+              print "Volumes will be too big. Volume is: ", PartialMinVol_arith*ssetprodover2, "*pi^2";
+              print "Volume bound: ", VboundS_arith, "*pi^2";
             end if;
             continue;
           end if;      
@@ -160,29 +170,27 @@ for fieldpoly in Reverse(T) do
           // both, so we just need to check if the ratio is indeed an integer
           // so there's a chance for this subgroup to exist in the first place.
           ms := InvolutionRankNu(k,[i,j],DB,sprodideal);  // called nu in the paper
-          m := ProbableRational(VboundS/(PartialMinVol*ssetprod/2^ms));
+          m := VboundS_arith/(PartialMinVol_arith*ssetprod/2^ms);
           neversubmultiple := not IsCoercible(Integers(),m);
           
           if neversubmultiple then
             if verbose ge 1 then
               print "PROBLEM: Maximal group of this level doesn't have volume a submultiple";
-              print "Volume of maximal group is: pi^2 *", 
-                        ProbableRational(PartialMinVol*ssetprod/
-                        2^ms/pi^2);
+              print "Volume of maximal group is: ", PartialMinVol_arith*ssetprod/2^ms, "*pi^2";
             end if;
             continue;
           else
             m := Integers()!m;
-            Vhol, Vst, mholst := MaximalVolumes(k, [i,j], DB, sprodideal);
+            Vhol_arith, Vst_arith, mholst_arith := MaximalVolumes(k, [i,j], DB, sprodideal, Zeta_arith);
 
             // Sanity check
-            if Abs(Vst-PartialMinVol*ssetprod/2^ms) 
-              gt eps then
+            if Vst_arith ne PartialMinVol_arith*ssetprod/2^ms then
               if verbose ge 1 then
-                  print MaximalVolumes(k,[i,j],DB,sprodideal: verbose:=true);
-                  print "Nu: ", InvolutionRankNu(k,[i,j],DB, sprodideal);
+                print MaximalVolumes(k,[i,j],DB,sprodideal: verbose:=true);
+                print "Nu: ", InvolutionRankNu(k,[i,j],DB, sprodideal);
                 print "My guess at volume: ", 
-                  PartialMinVol*ssetprod/2^InvolutionRankNu(k,[i,j],DB, sprodideal);
+                         PartialMinVol_arith*ssetprod/2^InvolutionRankNu(k,[i,j],DB, sprodideal),
+                         "*pi^2";
               end if;
               error "PROBLEM: VOLUMES DO NOT AGREE!";
             end if;
@@ -190,7 +198,7 @@ for fieldpoly in Reverse(T) do
             if Norm(sprodideal) eq 1 then
               CTL := ComputeTorsionLCM(k, DB, i, j);
             else 
-              CTL := ComputeTorsionLCMSgroups(k,DB,i,j,sprodideal);
+              CTL := ComputeTorsionLCMSgroups(k, DB, i, j, sprodideal);
             end if;
       
             if 0 ne m mod CTL then
@@ -210,10 +218,10 @@ for fieldpoly in Reverse(T) do
                        [Eltseq(k!t) : t in Generators(sprodideal)],
                        Norm(sprodideal), ms, 
                        CTL,
-                       VboundS/m,  
+                       VboundS_arith/m,  
                        MaybeHasUnstableSupergroup2(DB,koo[1..i-1] cat 
                            koo[i+1..j-1] cat koo[j+1..n], sprodideal),
-                       mholst *];
+                       mholst_arith *];
                 
               Append(~FINALLIST, ExampleFound);
 
@@ -230,7 +238,7 @@ for fieldpoly in Reverse(T) do
               print "Product of N(pp) for pp in S:", Norm(sprodideal); 
               print "Index in Gamma_{O,S}:", m;
               print "LCM of torsion:", CTL;
-              print "Volume of stable group: ", VboundS;
+              print "Volume of stable group: ", Vst_arith, "*pi^2";
               print "******************";
             end if;
           end if;
