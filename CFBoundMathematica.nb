@@ -1,0 +1,73 @@
+(* Mathematica code to compute Chinburg--Friedman type upper bounds for the proof of Theorem 3.4 *)
+
+(* The function called \alpha(x) in the proof of Theorem 3.4 *)
+
+a[x_] := (3*x^(-3)*(Sin[x]-x*Cos[x]))^2;
+
+(* The function of the variable s and the pth prime number (i.e., the pth smallest prime) that gives the lower bound for \hat{j}(s, y, p) *)
+
+jnew[s_, p_] := Log[(1-Prime[p]^(-2*s))/(1-Prime[p]^(-4))]/2;
+
+(* The function R[s, q], where q is the pth prime number. Note this is written differently than as in the proof of Theorem 3.4, but is easily seen to be equivalent using the Euler product formula for the Riemann zeta function along with elementary properties of logarithms. *)
+
+R[s_, p_] := Log[Product[(1-Prime[i]^(-2))/(1-Prime[i]^(-s)), {i, 1, p}]*Zeta[2]/Zeta[s]];
+
+(* The the function \hat{T} from the proof of Theorem 3.4, except \hat{j} is replaced with the lower bound defined above as jnew. Integrals are kept to 1000 precision, though we only need the first 3 digits of accuracy. The integral in the definition of \hat{T} is a sum of two terms, and we numerically integrate each term individually. As in the proof of Theorem 3.4, notice that r_1(K)/n_K = r_1/n, as we made this substitution in the definition of T below. *)
+
+T[s_, y_, r1_, n_, nK_, p_] := 3*EulerGamma/2 + Log[2*Sqrt[Pi]] + 3*r1/(2*n) - r1*Log[Pi]/n -s((EulerGamma + Log[2])/2 + r1/(2*n) + r1*Log[2]/(2*n)) -(3-s)*NIntegrate[(1-a[x*Sqrt[y]])/Sinh[x], {x, 0, Infinity}, WorkingPrecision->1000]/2 - (3-s)*r1*NIntegrate[(1-a[x*Sqrt[y]])/(2*Cosh[x/2]^2), {x, 0, Infinity}, WorkingPrecision->1000]/(2*n) - (3-s)*6*Pi/(5*Sqrt[y]*nK) + R[s, p] + jnew[s, p];
+
+(* The lower bound from Equation (3.5) in the proof of Theorem 3.4. *)
+
+B[s_, y_, r1_, r2_, n_, nK_, p_] := -Log[s*(s-1)] - r1*Log[Gamma[s/2]] - r2*Log[Gamma[s]] + n*T[s, y, r1, n, nK, p];
+
+----------------
+
+(* These are three auxiliary functions from the proof of Theorem 3.4 in case the user wants to explore them. *)
+
+q[s_, y_, p_, f_, r_] := Sum[2 * (3 - s) * Log[Prime[p]^f] * a[Sqrt[y] * Log[Prime[p]^(m*f)]] / (1 + Prime[p]^(m*f)), {m, 1, Infinity}] - r * Log[1 - Prime[p]^(-2 * f / r)] + r * Log[1 - Prime[p]^(-s * f / r)];
+
+qneg[s_, y_, p_, f_, r_] := Min[q[s, y, p, f, r], 0];
+
+j[s_, y_, p_, n_] := qneg[s, y, p, n, 1]/n;
+
+----------------
+
+(* A general form for a Chinburg--Friedman estimate going up to the 25th prime with s = 14/10, y = 1/10, r1 and r2 arbitrary, n arbitrary, and n_K = hCF*n, i.e., [K : \mathbb{Q}] = hCF * [k : \mathbb{Q}]. *)
+
+CFEstimate1 := N[B[14/10, 1/10, r1, r2, n, hCF*n, 25], 1000];
+
+(* This is then the estimate in Theorem 3.4. *)
+
+ExpCFEstimate1 := E^CFEstimate1;
+
+(* We repeat by going up to the 125th prime with s=135/100 and y=1/1000000, giving the second estimate in Theorem 3.4. *)
+
+CFEstimate2 := N[B[135/100, 1/1000000, r1, r2, n, hCF*n, 125], 1000];
+
+ExpCFEstimate2 := E^CFEstimate2;
+
+(* A form of the Chinburg--Friedman bound for a totally real field, so r1=n, r2=0. We still take s=14/10, y=1/10, and up to the 11th prime. To obtain the bounds found in Theorem 3.4 of our paper, one replaces s, y, and p with the appropriate values found in the last sentence of the proof. *)
+
+CFReal := N[B[14/10, 1/10, n, 0, n, hCF*n, 11], 1000];
+
+(* Calculations that turn the constant CFReal into various normalized volumes that are more convenient for our purposes. In particular, this converts CFReal into the form given in the statement of Theorem 3.4. *)
+
+ExpCFReal := E^CFReal;
+
+VolCFReal1 := (2*Pi)*ExpCFReal;
+
+VolCFReal2 := (2*Pi)^2*ExpCFReal;
+
+(* The regulator bound we use in the proof of Theorem 3.4. *)
+
+FReg := (Rationalize[0.0062]*E^(Rationalize[0.738]*n))
+
+VolCFReal2wFReg := FReg*2*VolCFReal2;
+
+VolCFReal1wFReg := FReg*2*VolCFReal1;
+
+(* The final form of the bound. *)
+
+VolCFReal[d_] := FReg*2*(2*Pi)^d*ExpCFReal;
+
+Simplify[N[VolCFReal2wFReg, 100]]
