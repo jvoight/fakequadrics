@@ -1,7 +1,7 @@
 // This code enumerates maximal arithmetic subgroups of PGL_2(R) x PGL_2(R) which 
 // may contain the stable subgroup of the fundamental group of an irreducible fake quadric.
 // This search is described on pages 19-21 of the paper Commensurability Classes of Fake Quadrics 
-// by Linowitz, Stover and Voight.
+// by Linowitz, Stover, and Voight.
 
 load "all_helper.m";
 
@@ -119,8 +119,7 @@ for fieldpoly in Reverse(T) do
 
         if PartialMinVol_arith gt Vbound_arith then
           if verbose ge 1 then
-            print "Volumes will be too big. Volume is: ", PartialMinVol_arith, "*pi^2";
-            print "Volume bound: ", Vbound_arith, "*pi^2";
+            print "Volumes will be too big. Volume is: ", PartialMinVol_arith, "*pi^2", ">", Vbound_arith, "*pi^2";
           end if;
           continue;
         end if;
@@ -134,11 +133,12 @@ for fieldpoly in Reverse(T) do
           ssetprodover2, ssetprod, sprodideal := LevelProducts(Zk, sset);
 
           if verbose ge 1 then
-            print "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
-            print "Checking k of discriminant:", Dk;
-            print "Checking N(DB): ", Norm(DB);
-            print "Checking split places i,j:",i,j;
-            print "Checking level: ", Norm(sprodideal);
+            if verbose ge 2 then
+              print "Checking k of discriminant:", Dk;
+              print "Checking N(DB): ", Norm(DB);
+              print "Checking split places i,j:",i,j;
+            end if;
+            print "@@@@@ Checking level: ", Norm(sprodideal);
           end if;
             
           if Norm(Gcd(sprodideal,DB)) gt 1 then
@@ -159,8 +159,7 @@ for fieldpoly in Reverse(T) do
             
           if PartialMinVol_arith*ssetprodover2 gt VboundS_arith then
             if verbose ge 1 then
-              print "Volumes will be too big. Volume is: ", PartialMinVol_arith*ssetprodover2, "*pi^2";
-              print "Volume bound: ", VboundS_arith, "*pi^2";
+              print "Volumes will be too big. Volume is: ", PartialMinVol_arith*ssetprodover2, "*pi^2", ">", VboundS_arith, "*pi^2";
             end if;
             continue;
           end if;      
@@ -181,7 +180,8 @@ for fieldpoly in Reverse(T) do
             continue;
           else
             m := Integers()!m;
-            Vhol_arith, Vst_arith, mholst_arith := MaximalVolumes(k, [i,j], DB, sprodideal, Zeta_arith);
+            Vhol_arith, Vst_arith, mholst_arith := MaximalVolumes(k, [i,j], 
+                  DB, sprodideal, Zeta_arith : verbose := (verbose ge 1));
 
             // Sanity check
             if Vst_arith ne PartialMinVol_arith*ssetprod/2^ms then
@@ -195,12 +195,8 @@ for fieldpoly in Reverse(T) do
               error "PROBLEM: VOLUMES DO NOT AGREE!";
             end if;
 
-            if Norm(sprodideal) eq 1 then
-              CTL := ComputeTorsionLCM(k, DB, i, j);
-            else 
-              CTL := ComputeTorsionLCMSgroups(k, DB, i, j, sprodideal);
-            end if;
-      
+            CTL := TorsionLCM(k, DB, sprodideal : verbose := (verbose ge 1));
+            
             if 0 ne m mod CTL then
               if verbose ge 1 then
                   print "PROBLEM: Index of fake quadric in maximal group of this " cat

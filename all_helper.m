@@ -176,189 +176,82 @@ function MaybeHasUnstableSupergroup2(DD, Soo, NN);
             ideal<Zk | [iota(x) : x in Generators(NN)]> eq NN] gt 1;
 end function;
 
-HasEmb := function(k,L,DiscB,i,j)
-  for ramindex in [1..Degree(k)] do
-    if ramindex ne i and ramindex ne j then
-      for q1 in RealPlaces(L) do
-        if Extends(q1,InfinitePlaces(k)[ramindex]) then
-          return false;
-        end if;
-      end for;
-    end if;
-  end for;
-
-  for ppp in Factorization(DiscB) do
-    pp:=ppp[1];
-    if IsTotallySplit(pp,Integers(L)) then
-      return false;
-    end if;
-  end for;
-  return true;
-end function;
-
-// This function uses the theorem of Chinburg--Friedman (Theorem 2.8) to check
-// for torsion elements in maximal arithmetic groups in the case that the set S is nonempty
-ComputeTorsionLCMSgroups := function(k,DiscB,i,j,Sprod) 
-  koo:=InfinitePlaces(k);
-  n:=Degree(k);
-  Zk:=Integers(k);
-  TorsionLCM:=1;
-  R<x>:=PolynomialRing(k);
-  Sproduct:=Sprod;
-  S:=[];
-  for q in PrimesUpTo(Norm(Sprod),k) do
-    if Gcd(q,Sprod) eq q then
-      Append(~S,q);
-    end if;
-  end for;
-
+// This function uses theorem XXX to compute the lcm of the order of torsion elements
+// in O_1^*/{+/-1}, which is a divisor of the order of torsion in the normalizer
+// (with codivisor equal to 1 or 2)
+TorsionLCM := function(k, DiscB, Sprod : verbose := false) 
+  torslcm := 1;
+  Ok := Integers(k);
 
   for cycindex in CyclotomicQuadraticExtensions(k) do
-    f := CyclotomicPolynomial(cycindex);
-    for c in Factorization(f,k) do
-      L:=ext<k | c[1]>;
-      ZL:=Integers(L);
-      if Degree(L) eq 2 and Degree(c[1]) eq 2 then
-        if HasEmb(k,L, DiscB, i, j) then
-          if IsEven(cycindex) and IsPrimePower(Integers()!(cycindex/2)) then // m=2*ell^r case
-            ell:=PrimeDivisors(Integers()!(cycindex/2))[1];
-            for pp in Factorization(ell*Zk) do
-              if Norm(GCD(DiscB*Sproduct,pp[1])) eq 1 then
-                if 0 eq RamificationIndex(pp[1]) mod EulerPhi(cycindex) then
-                  if #S gt 0 then
-                    holdsforallqq:=true;
-                    for qq in S do
-                      cond1:=false;
-                      cond2:=false;
-                      cond3:=false;
-                        
-                      if IsSplit(qq,ZL) then
-                        cond1:=true;
-                      end if;
-
-                      if PrimeDivisors(Integers()!(cycindex/2))[1] gt 2 then
-                        if 0 ne RamificationIndex(qq) mod EulerPhi(cycindex) then
-                          cond2:=true;
-                        end if;
-                      end if;
-
-                      if IsPrimePower(cycindex) and 
-                            Gcd(PrimeDivisors(cycindex)[1]*Zk,qq) eq qq then
-                        cond3:=true;
-                      end if;
-
-                      if not cond1 and not cond2 and not cond3 then
-                        holdsforallqq:=false;
-                      end if;
-                    end for;
-                  end if; // S is nonempty so check condition 3
-
-                  if holdsforallqq then
-                    TorsionLCM:=Lcm(TorsionLCM,cycindex);
-                  end if;
-                end if;
-              end if;
-            end for;
-          end if; // finite order is even
-          
-          if IsOdd(cycindex) then // m is odd case
-            if #S gt 0 then
-              holdsforallqq:=true;
-              for qq in S do
-                // Note that when m=cycindex is odd condition 2 does not apply
-                cond1:=false;
-                cond3:=false;
-
-                if IsSplit(qq,ZL) then
-                  cond1:=true;
-                end if;
-
-                if IsPrimePower(cycindex) and 
-                    Gcd(PrimeDivisors(cycindex)[1]*Zk,qq) eq qq then
-                  cond3:=true;
-                end if;
-
-                if not cond1 and not cond3 then
-                  holdsforallqq:=false;
-                end if;
-              end for;
-            end if; // S is nonempty so check condition 3
-
-            if holdsforallqq then
-              TorsionLCM:=Lcm(TorsionLCM,cycindex);
-            end if;
-          end if;
-          
-          if IsEven(cycindex) and not IsPrimePower(Integers()!(cycindex/2)) then 
-                 // m is even but not of the form 2*ell^r
-            if #S gt 0 then
-              holdsforallqq:=true;
-              for qq in S do
-                cond1:=false;
-                cond2:=false;
-                cond3:=false;
-
-                if IsSplit(qq,ZL) then
-                  cond1:=true;
-                end if;
-
-                if IsEven(cycindex) then
-                  if IsPrimePower(Integers()!(cycindex/2)) and 
-                      PrimeDivisors(Integers()!(cycindex/2))[1] gt 2 then
-                    if 0 ne (RamificationIndex(qq) mod EulerPhi(cycindex)) then
-                      cond2:=true;
-                    end if;
-                  end if;
-                end if;
-
-                if IsPrimePower(cycindex) and 
-                    Gcd(PrimeDivisors(cycindex)[1]*Zk,qq) eq qq then
-                  cond3:=true;
-                end if;
-
-                if not cond1 and not cond2 and not cond3 then
-                  holdsforallqq:=false;
-                end if;
-              end for;
-            end if; // S is nonempty so check condition 3
-
-            if holdsforallqq then
-              TorsionLCM:=Lcm(TorsionLCM,cycindex);
-            end if;
-          end if; // end m=cycindex is even but not of the form 2*ell^r
-
-        end if;
+    Phis := Factorization(CyclotomicPolynomial(cycindex),k);
+    assert &and[Degree(Phi[1]) eq 2 : Phi in Phis];  // sanity check
+    Phi := Phis[1][1];  // any minimal polynomial gives isomorphic field
+    L := ext<k | Phi>;
+    OL := Integers(L);
+    passedDD := true;
+    for pp in Factorization(DiscB) do
+      // locally embeds at pp | Disc(B) <=> pp does not split in L
+      if #Factorization(OL!!pp[1]) eq 2 then  
+        passedDD := false;
       end if;
     end for;
-  end for;
-
-  return TorsionLCM;
-end function;
-
-// This function uses Proposition 2.6 to check
-// for torsion elements in maximal arithmetic groups in the case that the set S is empty
-// That is, check for torsion elements in the normalizer of a maximal order
-ComputeTorsionLCM := function(k,DiscB,i,j) 
-  R<x>:=PolynomialRing(k);
-  TorsionLCM:=1;
-
-  for cycindex in CyclotomicQuadraticExtensions(k) do
-    f := CyclotomicPolynomial(cycindex);
-    for c in Factorization(f,k) do
-      L := ext<k | c[1]>;
-      if Degree(L) eq 2 and Degree(c[1]) eq 2 then
-        if HasEmb(k,L, DiscB, i, j) then
-          if IsEven(cycindex) then
-          	TorsionLCM:=Lcm(TorsionLCM,Integers()!(cycindex/2));
-          else 
-          	TorsionLCM:=Lcm(TorsionLCM,cycindex);
-          end if;
-        end if;
+    
+    passedNN := true;
+    T := ext<Ok | Phi>;
+    discT := Discriminant(T);
+    for qq in Factorization(Sprod) do
+      // locally embeds at qq | level <=> not (T is unramified and qq is inert in L) 
+      if Valuation(Discriminant(T),qq[1]) eq 0 and #Factorization(OL!!qq[1]) eq 1 then
+        passedNN := false;
       end if;
     end for;
+    if verbose then
+      print "Passed obstructions for cycindex =", cycindex, ": DD = ", passedDD, ", NN =", passedNN;
+    end if;
+    if passedDD and passedNN then
+      torslcm := Lcm(torslcm, cycindex div Gcd(2,cycindex));
+    end if;
+    
+    /*
+    // Untested code
+    if usenormalizer then
+      // check for 2*cycindex in normalizer
+      ephi := EulerPhi(cycindex);
+      if cycindex mod 2 eq 1 then
+        passedNN_max := true;
+        for qq in Factorization(Sprod) do
+          if Valuation(Discriminant(OL),qq[1]) eq 0 and #Factorization(OL!!qq[1]) eq 1 then
+            passedNN_max := false;
+          end if;
+        end for;
+        passedabsramind := true;
+        for elll in Factorization(cycindex) do
+          if Valuation(DiscB*Sprod, elll[1]) eq 0 and RamificationIndex(elll[1]) mod ephi ne 0 then
+            passedabsramind := false;
+          end if;
+        end for;
+        passedNN_norm := true;
+        for qq in Factorization(Sprod) do
+          if not ((#Factorization(OL!!qq[1]) eq 2) or 
+                  (Valuation(Ok!cycindex,qq[1]) gt 0 and RamificationIndex(qq[1]) mod ephi eq 0)) then
+            passedNN_norm := false;
+          end if;
+        end for;
+        if verbose then
+          print "Obstructions for odd normalizer:", passedNN_max, passedabsramind, passedNN_norm;
+        end if;
+        if passedNN_max and passedabsramind and passedNN_norm then
+          torslcm := Lcm(torslcm, 2*cycindex);
+        end if;
+      else
+        torslcm := Lcm(torslcm, 2*cycindex);
+      end if;
+    end if;
+    */ 
   end for;
 
-  return TorsionLCM;
+  return torslcm;
 end function;
 
 function HasNontrivialAutomorphism(k);

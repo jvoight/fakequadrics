@@ -16,8 +16,8 @@
 15 index of holomorphic stable group in maximal stable group
 */
 
-load "Output/Degree6Data.m";
-SetLogFile("Output/Degree6Table.tex");
+load "Output/Degree4Data.m";
+SetLogFile("Output/Degree4Table.tex");
 
 n := dat[1][1];
 d := 0;
